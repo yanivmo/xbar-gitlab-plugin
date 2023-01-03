@@ -126,7 +126,10 @@ def process_project_branches(project_branches):
                     break
                 raise e
 
-            process_pipeline(pipeline)
+            if pipeline is not None:
+                process_pipeline(pipeline)
+            else:
+                print(f"🔜 {branch_name}")
 
         print("---")
 
