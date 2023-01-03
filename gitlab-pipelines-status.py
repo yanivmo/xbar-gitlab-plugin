@@ -93,11 +93,13 @@ def normalize_time(time_str):
 
 def process_pipeline(pipeline):
     status = PIPELINE_STATUSES.get(pipeline["status"], "?")
+    pipeline_id = pipeline["id"]
     ref = pipeline["ref"]
     web_url = pipeline["web_url"]
     created_at = normalize_time(pipeline["created_at"])
 
     print(f"{status} {ref} | href={web_url}")
+    print(f"--🆔 {pipeline_id} | href={web_url}")
     print(f"--⏱ {created_at} | href={web_url}")
 
 
