@@ -1,0 +1,4 @@
+{
+	"VAR_CONFIG_PATHNAME": "~/.gitlab-pipelines-status.json",
+	"VAR_GITLAB_TOKEN": ""
+}
