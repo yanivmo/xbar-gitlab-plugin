@@ -1,0 +1,10 @@
+{
+  "Fireblocks/payments/pikaia": [
+    "main",
+    "develop",
+    "PIK-2178-create-fb-external-wallet"
+  ],
+  "Fireblocks/Core": [
+    "master"
+  ]
+}
