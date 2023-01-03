@@ -76,22 +76,6 @@ class GitLab:
         pipelines = self.get_resource(uri, query)
         return pipelines[0] if len(pipelines) > 0 else None
 
-    def get_user_finished_pipelines(self, project_id, username):
-        uri = f"projects/{project_id}/pipelines"
-        query = {
-            "username": username,
-            "scope": "finished",
-        }
-        return self.get_resource(uri, query)
-
-    def get_user_open_merge_requests(self):
-        uri = f"merge_requests"
-        query = {
-            "state": "opened",
-            "view": "simple",
-        }
-        return self.get_resource(uri, query)
-
     def get_branches(self, project_id):
         uri = f"projects/{project_id}/repository/branches"
         query = {}
@@ -146,16 +130,6 @@ def gitlab_logo():
 
 
 def main():
-    # gitlab = GitLab(GITLAB_TOKEN)
-    # print(
-    #     json.dumps(
-    #         # gitlab.get_branch_latest_finished_pipeline(7614360, "master"),
-    #         # gitlab.get_open_merge_requests_head_pipeline(),
-    #         # gitlab.get_user_finished_pipelines(Projects.Pikaia, "gweizenberg"),
-    #         gitlab.get_branches(quote("Fireblocks/payments/pikaia", safe="")),
-    #         indent=2,
-    #     )
-    # )
     if GITLAB_TOKEN is None:
         raise Exception("GitLab personal API token is not configured.")
 
