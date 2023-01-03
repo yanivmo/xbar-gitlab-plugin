@@ -1,10 +1,10 @@
 {
-  "Fireblocks/payments/pikaia": [
+  "path/to/project1": [
     "main",
     "develop",
-    "PIK-2178-create-fb-external-wallet"
+    "some-other-branch"
   ],
-  "Fireblocks/Core": [
+  "path/to/project2": [
     "master"
   ]
 }
