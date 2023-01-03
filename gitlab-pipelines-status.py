@@ -6,7 +6,7 @@
 # <xbar.author>Yaniv Mordekhay</xbar.author>
 # <xbar.author.github>yanivmo</xbar.author.github>
 # <xbar.desc>Displays the status of GitLab pipelines for the specified branches. The tracked branches should be listed in the configuration file.</xbar.desc>
-# <xbar.image></xbar.image>
+# <xbar.image>https://i.imgur.com/bJ6VQsT.png</xbar.image>
 # <xbar.dependencies>python3</xbar.dependencies>
 # <xbar.var>string(VAR_GITLAB_TOKEN=""): GitLab personal API token.</xbar.var>
 # <xbar.var>string(VAR_CONFIG_PATHNAME="~/.gitlab-status-indicator.json"): Location of the configuration file. File format: {[ProjectFullName]: BranchNamesList}</xbar.var>
@@ -134,7 +134,7 @@ def main():
         raise Exception("GitLab personal API token is not configured.")
 
     if CONFIG_PATHNAME is None:
-        raise Exception("ERROR: Configuration file location is not configured.")
+        raise Exception("Configuration file location is not configured.")
 
     config_pathname = os.path.expanduser(CONFIG_PATHNAME)
     with open(config_pathname) as f:
