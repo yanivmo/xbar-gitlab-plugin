@@ -22,7 +22,7 @@ import json
 import socket
 from datetime import datetime
 from urllib import request
-from urllib.error import URLError
+from urllib.error import URLError, HTTPError
 from urllib.parse import urlencode, quote
 
 GITLAB_TOKEN = os.environ.get("VAR_GITLAB_TOKEN")
@@ -112,6 +112,11 @@ def process_project_branches(project_branches):
                 pipeline = gitlab.get_branch_latest_finished_pipeline(
                     quote(project_name, safe=""), branch_name
                 )
+            except HTTPError as e:
+                if e.code == 404:
+                    print(f"💔Not found: {branch_name} | color=red")
+                    continue
+                raise e
             except URLError as e:
                 if (
                     isinstance(e.reason, socket.gaierror)
@@ -120,6 +125,7 @@ def process_project_branches(project_branches):
                     print("💔 No connection | color=red")
                     break
                 raise e
+
             process_pipeline(pipeline)
 
         print("---")
