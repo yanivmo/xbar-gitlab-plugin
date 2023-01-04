@@ -66,7 +66,10 @@ class GitLab:
 
         return http_get_json(url, headers)
 
-    def get_branch_latest_pipelines(self, project_id, branch_name, count=3):
+    def get_branch_latest_pipelines(self, project_id, branch_name: str, count=3):
+        if branch_name.startswith("!"):
+            branch_name = f"refs/merge-requests/{branch_name[1:]}/head"
+
         uri = f"projects/{project_id}/pipelines"
         query = {
             "ref": branch_name,
