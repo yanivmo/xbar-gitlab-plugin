@@ -20,7 +20,7 @@
 import os
 import json
 import socket
-from datetime import datetime
+from datetime import datetime, timezone
 from urllib import request
 from urllib.error import URLError, HTTPError
 from urllib.parse import urlencode, quote
@@ -86,7 +86,8 @@ class GitLab:
 def normalize_time(time_str):
     return (
         datetime.strptime(time_str, "%Y-%m-%dT%H:%M:%S.%fZ")
-        .replace(microsecond=0)
+        .replace(microsecond=0, tzinfo=timezone.utc)
+        .astimezone()
         .strftime("%c")
     )
 
