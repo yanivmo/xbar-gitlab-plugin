@@ -30,15 +30,15 @@ CONFIG_PATHNAME = os.environ.get("VAR_CONFIG_PATHNAME")
 
 PIPELINE_STATUSES = {
     "created": "",
-    "waiting_for_resource": "",
-    "preparing": "",
-    "pending": "",
-    "running": "",
+    "waiting_for_resource": "⏳",
+    "preparing": "▶️",
+    "pending": "⏳",
+    "running": "▶️",
     "success": "✅",
     "failed": "❌",
     "canceled": "✖️",
     "skipped": "➖",
-    "manual": "",
+    "manual": "💤",
     "scheduled": "",
 }
 
@@ -66,15 +66,13 @@ class GitLab:
 
         return http_get_json(url, headers)
 
-    def get_branch_latest_finished_pipeline(self, project_id, branch_name):
+    def get_branch_latest_pipelines(self, project_id, branch_name, count=3):
         uri = f"projects/{project_id}/pipelines"
         query = {
             "ref": branch_name,
-            "scope": "finished",
-            "per_page": 1,
+            "per_page": count,
         }
-        pipelines = self.get_resource(uri, query)
-        return pipelines[0] if len(pipelines) > 0 else None
+        return self.get_resource(uri, query)
 
     def get_branches(self, project_id):
         uri = f"projects/{project_id}/repository/branches"
@@ -92,16 +90,13 @@ def normalize_time(time_str):
     )
 
 
-def process_pipeline(pipeline):
-    status = PIPELINE_STATUSES.get(pipeline["status"], "?")
-    pipeline_id = pipeline["id"]
-    ref = pipeline["ref"]
-    web_url = pipeline["web_url"]
-    created_at = normalize_time(pipeline["created_at"])
-
-    print(f"{status} {ref} | href={web_url}")
-    print(f"--🆔 {pipeline_id} | href={web_url}")
-    print(f"--⏱ {created_at} | href={web_url}")
+def process_branch_pipelines(pipelines):
+    for p in pipelines:
+        status = PIPELINE_STATUSES.get(p["status"], "?")
+        pipeline_id = p["id"]
+        url = p["web_url"]
+        created_at = normalize_time(p["created_at"])
+        print(f"--{status} #{pipeline_id}    ⏰ {created_at} | href={url} font=Monaco")
 
 
 def process_project_branches(project_branches):
@@ -112,9 +107,14 @@ def process_project_branches(project_branches):
 
         for branch_name in branches:
             try:
-                pipeline = gitlab.get_branch_latest_finished_pipeline(
+                pipelines = gitlab.get_branch_latest_pipelines(
                     quote(project_name, safe=""), branch_name
                 )
+                branch_status = "🤷"
+                if pipelines:
+                    branch_status = PIPELINE_STATUSES.get(pipelines[0]["status"], "?")
+                print(f"{branch_status} {branch_name}")
+
             except HTTPError as e:
                 if e.code == 404:
                     print(f"💔Not found: {branch_name} | color=red")
@@ -129,10 +129,7 @@ def process_project_branches(project_branches):
                     break
                 raise e
 
-            if pipeline is not None:
-                process_pipeline(pipeline)
-            else:
-                print(f"🔜 {branch_name}")
+            process_branch_pipelines(pipelines)
 
         print("---")
 
