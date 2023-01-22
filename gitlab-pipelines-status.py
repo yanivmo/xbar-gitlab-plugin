@@ -66,16 +66,35 @@ class GitLab:
 
         return http_get_json(url, headers)
 
-    def get_branch_latest_pipelines(self, project_id, branch_name: str, count=3):
-        if branch_name.startswith("!"):
-            branch_name = f"refs/merge-requests/{branch_name[1:]}/head"
-
+    def get_ref_latest_pipelines(self, project_id, ref: str, count=3):
         uri = f"projects/{project_id}/pipelines"
         query = {
-            "ref": branch_name,
+            "ref": ref,
             "per_page": count,
         }
         return self.get_resource(uri, query)
+
+    def get_merge_request_latest_pipelines(self, project_id, mr_id: str, count=3):
+        mr_ref = f"refs/merge-requests/{mr_id}/head"
+        pipelines = self.get_ref_latest_pipelines(project_id, mr_ref, count)
+
+        if not pipelines:
+            mr_train_ref = f"refs/merge-requests/{mr_id}/train"
+            pipelines = self.get_ref_latest_pipelines(project_id, mr_train_ref, count)
+
+        return pipelines
+
+    def get_branch_latest_pipelines(self, project_id, branch_name: str, count=3):
+        if branch_name.startswith("!"):
+            return self.get_merge_request_latest_pipelines(
+                project_id, branch_name[1:], count
+            )
+        else:
+            return self.get_ref_latest_pipelines(project_id, branch_name, count)
+
+    def get_pipeline(self, project_id, pipeline_id: str):
+        uri = f"projects/{project_id}/pipelines/{pipeline_id}"
+        return self.get_resource(uri)
 
     def get_branches(self, project_id):
         uri = f"projects/{project_id}/repository/branches"
