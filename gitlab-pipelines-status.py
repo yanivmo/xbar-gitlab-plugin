@@ -66,6 +66,11 @@ class GitLab:
 
         return http_get_json(url, headers)
 
+    def get_branch_merge_request(self, project_id, branch_name: str):
+        uri = f"projects/{project_id}/merge_requests"
+        query = {"source_branch": branch_name}
+        return self.get_resource(uri, query)
+
     def get_ref_latest_pipelines(self, project_id, ref: str, count=3):
         uri = f"projects/{project_id}/pipelines"
         query = {
@@ -78,11 +83,12 @@ class GitLab:
         mr_ref = f"refs/merge-requests/{mr_id}/head"
         pipelines = self.get_ref_latest_pipelines(project_id, mr_ref, count)
 
-        if not pipelines:
-            mr_train_ref = f"refs/merge-requests/{mr_id}/train"
-            pipelines = self.get_ref_latest_pipelines(project_id, mr_train_ref, count)
+        mr_train_ref = f"refs/merge-requests/{mr_id}/train"
+        train_pipelines = self.get_ref_latest_pipelines(project_id, mr_train_ref, count)
 
-        return pipelines
+        return sorted(
+            pipelines + train_pipelines, key=lambda p: p["created_at"], reverse=True
+        )
 
     def get_branch_latest_pipelines(self, project_id, branch_name: str, count=3):
         if branch_name.startswith("!"):
@@ -118,7 +124,13 @@ def process_branch_pipelines(pipelines):
         pipeline_id = p["id"]
         url = p["web_url"]
         created_at = normalize_time(p["created_at"])
-        print(f"--{status} #{pipeline_id}    ⏰ {created_at} | href={url} font=Monaco")
+
+        train_icon = ""
+        if p["ref"].endswith("train"):
+            train_icon = "🚂🚃🚃"
+        print(
+            f"--{status} #{pipeline_id}    ⏰ {created_at}  {train_icon}| href={url} font=Monaco"
+        )
 
 
 def process_project_branches(project_branches):
@@ -126,11 +138,12 @@ def process_project_branches(project_branches):
 
     for project_name, branches in project_branches.items():
         print(project_name)
+        quoted_project = quote(project_name, safe="")
 
         for branch_name in branches:
             try:
                 pipelines = gitlab.get_branch_latest_pipelines(
-                    quote(project_name, safe=""), branch_name
+                    quoted_project, branch_name
                 )
                 branch_status = "🤷"
                 if pipelines:
@@ -152,6 +165,21 @@ def process_project_branches(project_branches):
                 raise e
 
             process_branch_pipelines(pipelines)
+
+            merge_requests = gitlab.get_branch_merge_request(
+                quoted_project, branch_name
+            )
+            for mr in merge_requests:
+                mr_id = mr["iid"]
+                mr_title = mr["title"]
+                pipelines = gitlab.get_merge_request_latest_pipelines(
+                    quoted_project, mr_id
+                )
+
+                if pipelines:
+                    pipeline_status = PIPELINE_STATUSES.get(pipelines[0]["status"], "?")
+                    print(f"└┈Ⓜ️{pipeline_status} !{mr_id}: {mr_title}")
+                    process_branch_pipelines(pipelines)
 
         print("---")
 
