@@ -1,6 +1,6 @@
 # GitLab Pipelines Status Indicator
 
-![plugin screenshot](https://user-images.githubusercontent.com/3540009/213928204-42ac4f64-01cf-4942-b861-d0b210797cdc.png)
+![plugin screenshot](https://i.imgur.com/bJ6VQsT.png)
 
 This is a plugin for [Xbar](https://xbarapp.com/) displaying GitLab pipelines status.
 
