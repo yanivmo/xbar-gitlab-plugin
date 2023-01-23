@@ -6,8 +6,9 @@
 # <xbar.author>Yaniv Mordekhay</xbar.author>
 # <xbar.author.github>yanivmo</xbar.author.github>
 # <xbar.desc>Displays the status of GitLab pipelines for the specified branches. The tracked branches should be listed in the configuration file.</xbar.desc>
-# <xbar.image>https://i.imgur.com/bJ6VQsT.png</xbar.image>
+# <xbar.image>https://i.imgur.com/TghSti5.png</xbar.image>
 # <xbar.dependencies>python3</xbar.dependencies>
+# <xbar.abouturl>https://github.com/yanivmo/xbar-gitlab-plugin</xbar.abouturl>
 # <xbar.var>string(VAR_GITLAB_TOKEN=""): GitLab personal API token.</xbar.var>
 # <xbar.var>string(VAR_CONFIG_PATHNAME="~/.gitlab-status-indicator.json"): Location of the configuration file. File format: {[ProjectFullName]: BranchNamesList}</xbar.var>
 
