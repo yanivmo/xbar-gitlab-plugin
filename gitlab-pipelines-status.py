@@ -10,7 +10,8 @@
 # <xbar.dependencies>python3</xbar.dependencies>
 # <xbar.abouturl>https://github.com/yanivmo/xbar-gitlab-plugin</xbar.abouturl>
 # <xbar.var>string(VAR_GITLAB_TOKEN=""): GitLab personal API token.</xbar.var>
-# <xbar.var>string(VAR_CONFIG_PATHNAME="~/.gitlab-status-indicator.json"): Location of the configuration file. File format: {[ProjectFullName]: BranchNamesList}</xbar.var>
+# <xbar.var>string(VAR_SPECIFIC_CONFIG_PATHNAME="~/.gitlab-specific-status-indicator.json"): Location of the configuration file. File format: {[ProjectFullName]: BranchNamesList}</xbar.var>
+# <xbar.var>string(VAR_AUTO_CONFIG_PATHNAME="~/.gitlab-auto-status-indicator.json"): Location of the projects to follow configuration file. File format: {projects: [ProjectFullName1, ProjectFullName2]}</xbar.var>
 
 # The config file is a JSON file containing an object whose attributes are project names and their
 # values are lists of branch names. For example:
@@ -27,7 +28,8 @@ from urllib.error import URLError, HTTPError
 from urllib.parse import urlencode, quote
 
 GITLAB_TOKEN = os.environ.get("VAR_GITLAB_TOKEN")
-CONFIG_PATHNAME = os.environ.get("VAR_CONFIG_PATHNAME")
+SPECIFIC_CONFIG_PATHNAME = os.environ.get("VAR_SPECIFIC_CONFIG_PATHNAME")
+AUTO_CONFIG_PATHNAME = os.environ.get("VAR_AUTO_CONFIG_PATHNAME")
 
 PIPELINE_STATUSES = {
     "created": "",
@@ -71,6 +73,16 @@ class GitLab:
         uri = f"projects/{project_id}/merge_requests"
         query = {"source_branch": branch_name}
         return self.get_resource(uri, query)
+
+    def get_all_my_merge_requests(self, project_id, username: str):
+        uri = f"projects/{project_id}/merge_requests"
+        query = {"state": "opened", "assignee_username": username}
+        return self.get_resource(uri, query)
+
+    def get_my_username(self):
+        uri = 'user'
+        user = self.get_resource(uri)
+        return user['username']
 
     def get_ref_latest_pipelines(self, project_id, ref: str, count=3):
         uri = f"projects/{project_id}/pipelines"
@@ -134,6 +146,22 @@ def process_branch_pipelines(pipelines):
         )
 
 
+def generate_branch_list(plugin_config):
+    gitlab = GitLab(GITLAB_TOKEN)
+    username = gitlab.get_my_username()
+
+    branches = {}
+
+    for project in plugin_config['projects']:
+        branches[project] = []
+        quoted_project = quote(project, safe="")
+        my_mrs = gitlab.get_all_my_merge_requests(quoted_project, username)
+        for mr in my_mrs:
+            branches[project].append(mr["source_branch"])
+
+    return branches
+
+
 def process_project_branches(project_branches):
     gitlab = GitLab(GITLAB_TOKEN)
 
@@ -158,8 +186,8 @@ def process_project_branches(project_branches):
                 raise e
             except URLError as e:
                 if (
-                    isinstance(e.reason, socket.gaierror)
-                    and e.reason.errno == socket.EAI_NONAME
+                        isinstance(e.reason, socket.gaierror)
+                        and e.reason.errno == socket.EAI_NONAME
                 ):
                     print("💔 No connection | color=red")
                     break
@@ -193,16 +221,28 @@ def main():
     if GITLAB_TOKEN is None:
         raise Exception("GitLab personal API token is not configured.")
 
-    if CONFIG_PATHNAME is None:
-        raise Exception("Configuration file location is not configured.")
-
-    config_pathname = os.path.expanduser(CONFIG_PATHNAME)
-    with open(config_pathname) as f:
-        project_branches = json.load(f)
-
     print(f"| templateImage={gitlab_logo_dark()}")
     print("---")
-    process_project_branches(project_branches)
+
+    if SPECIFIC_CONFIG_PATHNAME is None and AUTO_CONFIG_PATHNAME is None:
+        raise Exception("Configuration file location is not configured.")
+
+    if ((SPECIFIC_CONFIG_PATHNAME and os.path.exists(os.path.expanduser(SPECIFIC_CONFIG_PATHNAME))) and
+            AUTO_CONFIG_PATHNAME and os.path.exists(os.path.expanduser(AUTO_CONFIG_PATHNAME))):
+        raise Exception("Choose only one configuration file type: auto/specific")
+
+    if SPECIFIC_CONFIG_PATHNAME and os.path.exists(os.path.expanduser(SPECIFIC_CONFIG_PATHNAME)):
+        config_pathname = os.path.expanduser(SPECIFIC_CONFIG_PATHNAME)
+        with open(config_pathname) as f:
+            project_branches = json.load(f)
+        process_project_branches(project_branches)
+
+    elif AUTO_CONFIG_PATHNAME and os.path.exists(os.path.expanduser(AUTO_CONFIG_PATHNAME)):
+        config_pathname = os.path.expanduser(AUTO_CONFIG_PATHNAME)
+        with open(config_pathname) as f:
+            plugin_config = json.load(f)
+        project_branches = generate_branch_list(plugin_config)
+        process_project_branches(project_branches)
 
 
 if __name__ == "__main__":
