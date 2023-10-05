@@ -10,8 +10,8 @@
 # <xbar.dependencies>python3</xbar.dependencies>
 # <xbar.abouturl>https://github.com/yanivmo/xbar-gitlab-plugin</xbar.abouturl>
 # <xbar.var>string(VAR_GITLAB_TOKEN=""): GitLab personal API token.</xbar.var>
-# <xbar.var>string(VAR_SPECIFIC_CONFIG_PATHNAME="~/.gitlab-specific-status-indicator.json"): Location of the configuration file. File format: {[ProjectFullName]: BranchNamesList}</xbar.var>
-# <xbar.var>string(VAR_AUTO_CONFIG_PATHNAME="~/.gitlab-auto-status-indicator.json"): Location of the projects to follow configuration file. File format: {projects: [ProjectFullName1, ProjectFullName2]}</xbar.var>
+# <xbar.var>string(VAR_SPECIFIC_CONFIG_PATHNAME="~/xbar/.gitlab-specific-status-indicator.json"): Location of the configuration file. File format: {[ProjectFullName]: BranchNamesList}</xbar.var>
+# <xbar.var>string(VAR_AUTO_CONFIG_PATHNAME="~/xbar/.gitlab-auto-status-indicator.json"): Location of the projects to follow configuration file. File format: {projects: [ProjectFullName1, ProjectFullName2]}</xbar.var>
 
 # The config file is a JSON file containing an object whose attributes are project names and their
 # values are lists of branch names. For example:
@@ -161,12 +161,29 @@ def generate_branch_list(plugin_config):
 
     return branches
 
+def process_all_merge_requests(plugin_config):
+    print('Merge Requests')
+    print("---")
+    gitlab = GitLab(GITLAB_TOKEN)
+    username = gitlab.get_my_username()
+
+    for project in plugin_config['projects']:
+        quoted_project = quote(project, safe="")
+        print(project, username)
+        my_mrs = gitlab.get_all_my_merge_requests(quoted_project, username)
+    for mr in my_mrs:
+        mr_id = mr["iid"]
+        mr_url = mr["web_url"]
+        print(f"└┈Ⓜ️{mr_id}| href={mr_url} font=Monaco")
 
 def process_project_branches(project_branches):
     gitlab = GitLab(GITLAB_TOKEN)
 
     for project_name, branches in project_branches.items():
-        print(project_name)
+
+        if len(branches):
+            print(project_name)
+
         quoted_project = quote(project_name, safe="")
 
         for branch_name in branches:
@@ -243,7 +260,7 @@ def main():
             plugin_config = json.load(f)
         project_branches = generate_branch_list(plugin_config)
         process_project_branches(project_branches)
-
+        # process_all_merge_requests(plugin_config)
 
 if __name__ == "__main__":
     main()
